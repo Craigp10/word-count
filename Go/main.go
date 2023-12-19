@@ -38,7 +38,7 @@ var wcCmd = &cobra.Command{
 		for _, arg := range args {
 			// Perform actions with the variadic strings here
 			// filePaths = append(filePaths, arg)
-			fmt.Println("Files:", arg)
+			fmt.Println("Files:", arg, configValue.Words)
 			processFile(&c, &configValue, arg)
 		}
 	},
@@ -65,14 +65,14 @@ func processFile(c *countStruct, cfg *configStruct, filePath string) error {
 		if cfg.Lines {
 			c.Lines++
 		}
+		words := strings.Fields(scanner.Text())
 		if cfg.Words {
-			words := strings.Fields(scanner.Text())
 			count := len(words)
 			c.Words += int32(count)
-			if cfg.Characters {
-				// Count characters as all characters not counting spaces,
-				c.Characters += int64(len(strings.Join(words, " ")))
-			}
+		}
+		if cfg.Characters {
+			// Count characters as all characters not counting spaces,
+			c.Characters += int64(len(strings.Join(words, " ")))
 		}
 	}
 
@@ -90,15 +90,10 @@ func main() {
 	wcCmd.Flags().BoolVarP(&configValue.Lines, "lines", "l", false, "The number of lines in each input file is written to the standard output.")
 	wcCmd.Flags().BoolVarP(&configValue.Characters, "characters", "m", false, "The number of characters in each input file is written to the standard output. If the current locale does not support multibyte characters, this is equivalent to the -c option. This will cancel out any prior usage of the -c option.")
 	wcCmd.Flags().BoolVarP(&configValue.Words, "words", "w", false, "The number of words in each input file is written to the standard output.")
-	wcCmd.Flags().StringSliceVarP(&filePaths, "files", "f", []string{}, "Input file paths")
+	// wcCmd.Flags().StringSliceVarP(&filePaths, "files", "f", []string{}, "Input file paths")
 
 	if err := wcCmd.Execute(); err != nil {
 		fmt.Println(err)
-		os.Exit(1)
-	}
-	fmt.Println(filePaths)
-	if len(filePaths) < 1 {
-		fmt.Println("At least 1 file must be referenced in the command.")
 		os.Exit(1)
 	}
 }
