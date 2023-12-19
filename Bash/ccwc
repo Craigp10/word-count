@@ -1,0 +1,115 @@
+#!/bin/bash
+
+count_file() {
+    local file="$1"
+    local char_count=0
+    local word_count=0
+    local line_count=0
+    
+    local byte_count=$(stat -c %s "$file")
+
+    while IFS= read -r line; do
+        # Increment line count
+        ((line_count++))
+
+        # Increment word count (using whitespace as word boundaries)
+        words=($line)
+        if [ -n "$line" ]; then
+            ((word_count += ${#words[@]} - 1))
+        fi
+
+        # Increment character count
+        ((char_count += ${#line}))
+    done < "$file"
+
+    # # Increment word count for the last line if it's not empty
+    # if [ -n "$line" ]; then
+    #     ((word_count++))
+    # fi
+    echo "$byte_count $char_count $word_count $line_count"
+}
+
+usage() {
+    echo "Usage: ccwc [-c] [-l] [-w] [-m] <file1> [<file2> ...]"
+    echo "Options:"
+    echo "  -c    Display file size (bytes)"
+    echo "  -l    Display line count"
+    echo "  -w    Display word count"
+    echo "  -m    Display char count"
+    exit 1
+}
+
+# Check if at least one file argument is provided
+if [ $# -eq 0 ]; then
+    echo "Usage: ccwc <file1> [<file2> ...]"
+    exit 1
+fi
+
+# Initialize total counts
+total_char_count=0
+total_word_count=0
+total_line_count=0
+total_byte_count=0
+
+# Process flags
+display_char_count=false
+display_line_count=false
+display_word_count=false
+display_byte_count=false
+
+while getopts "mlwc" opt; do
+    case $opt in
+        m) display_char_count=true ;;
+        l) display_line_count=true ;;
+        w) display_word_count=true ;;
+        c) display_byte_count=true ;;
+        \?) echo "Invalid option: -$OPTARG" >&2; usage ;;
+    esac
+done
+
+shift $((OPTIND - 1))
+
+for file in "$@"; do
+    char_count=0
+    line_count=0
+    word_count=0
+    byte_count=$(stat -f %z "$file")
+    while IFS= read -r line; do
+        # Increment character count
+        ((char_count += ${#line}))
+
+        # needs fixing
+        words=($line)
+        ((word_count += ${#words[@]}))
+        
+        # handle line count inc
+        ((line_count++))
+    done < "$file"
+
+    # aggregate counts
+    total_char_count=$((total_char_count + char_count))
+    total_line_count=$((total_line_count + line_count))
+    total_word_count=$((total_word_count + word_count))
+    total_byte_count=$((total_byte_count + byte_count))
+
+    print_line=""
+
+
+    if $display_line_count; then
+      print_line+=" $total_line_count"
+    fi
+
+    if $display_word_count && [ "$display_byte_count" != true ]; then
+        print_line+=" $total_word_count"
+    fi
+
+    if $display_byte_count; then
+      print_line+=" $total_byte_count"
+    fi
+
+    if $display_char_count; then
+        print_line+=" $total_char_count"
+    fi
+
+    echo " " $print_line $file
+done
