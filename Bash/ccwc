@@ -57,19 +57,74 @@ display_line_count=false
 display_word_count=false
 display_byte_count=false
 
+    flag_count=0
 while getopts "mlwc" opt; do
+    ((flag_count++))
     case $opt in
-        m) display_char_count=true ;;
+        m) display_char_count=true ;; 
         l) display_line_count=true ;;
         w) display_word_count=true ;;
         c) display_byte_count=true ;;
         \?) echo "Invalid option: -$OPTARG" >&2; usage ;;
     esac
 done
+if [ $flag_count -lt 1 ]; then
+  display_line_count=true
+  display_word_count=true
+  display_byte_count=true
+fi
 
 shift $((OPTIND - 1))
+if [ $# -eq 0 ]; then
+    # No file provided then read from standard input
+    echo $line
+    char_count=0
+    line_count=0
+    word_count=0
+    byte_count=0
 
-for file in "$@"; do
+    while IFS= read -r line; do
+        # Increment character count
+        ((char_count += ${#line}))
+
+        words=($line)
+        ((word_count += ${#words[@]}))
+
+        # handle line count inc
+        ((line_count++))
+
+
+        byte_count=$(echo -n "$line" | wc -c)
+    done < <(cat)
+
+    # aggregate counts
+    total_char_count=$((total_char_count + char_count))
+    total_line_count=$((total_line_count + line_count))
+    total_word_count=$((total_word_count + word_count))
+    total_byte_count=$((total_byte_count + byte_count))
+
+    print_line=""
+
+
+    if $display_line_count; then
+      print_line+=" $total_line_count"
+    fi
+
+    if $display_word_count; then
+        print_line+=" $total_word_count"
+    fi
+
+    if $display_byte_count; then
+      print_line+=" $total_byte_count"
+    fi
+
+    if $display_char_count && [ "$display_byte_count" != true ]; then
+        print_line+=" $total_char_count"
+    fi
+
+    echo " " $print_line $file
+else
+   for file in "$@"; do
     char_count=0
     line_count=0
     word_count=0
@@ -99,7 +154,7 @@ for file in "$@"; do
       print_line+=" $total_line_count"
     fi
 
-    if $display_word_count && [ "$display_byte_count" != true ]; then
+    if $display_word_count; then
         print_line+=" $total_word_count"
     fi
 
@@ -107,9 +162,10 @@ for file in "$@"; do
       print_line+=" $total_byte_count"
     fi
 
-    if $display_char_count; then
+    if $display_char_count && [ "$display_byte_count" != true ]; then
         print_line+=" $total_char_count"
     fi
 
     echo " " $print_line $file
-done
+    done
+fi
