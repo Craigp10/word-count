@@ -31,6 +31,15 @@ be provided to see an output on the file
 
 `./word_count ../test.txt -w -c -l`
 
+Lastly, add the binary to your local go pat. Ensure that `~/go/` is in your $PATH
+
+mv word_count so that it can be called from anywhere `mv word_count ~/go/`
+
+Now call it.
+
+`$ word_count ./test.txt -w -c -l`
+ 
+
 ### Bash
 
 Bash utilizies mac `PATH` to create an alias and call the related shell script to execute the commands.
